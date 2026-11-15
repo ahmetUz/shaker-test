@@ -11,5 +11,6 @@ export default defineConfig({
   },
   test: {
     include: ['src/**/*.test.ts'],
+    env: { VITE_API_BASE_URL: 'https://api.test' },
   },
 })
