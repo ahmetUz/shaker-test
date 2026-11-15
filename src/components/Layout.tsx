@@ -6,7 +6,7 @@ export function Layout() {
       <header className="border-b bg-background">
         <div className="mx-auto max-w-5xl px-4 py-4">
           <Link to="/" className="text-lg font-semibold">
-            Events
+            Événements
           </Link>
         </div>
       </header>

@@ -1,3 +1,3 @@
 export function EventsPage() {
-  return <h1 className="text-2xl font-semibold">Events</h1>
+  return <h1 className="text-2xl font-semibold">Événements</h1>
 }
