@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getEvent, getEventParticipants, getEvents, isNotFoundError } from './api'
+import {
+  deleteParticipant,
+  getEvent,
+  getEventParticipants,
+  getEvents,
+  isNotFoundError,
+  updateParticipantStatus,
+} from './api'
 
 function mockFetch(status: number, body: unknown) {
   const fetchMock = vi.fn().mockResolvedValue(
@@ -87,5 +94,32 @@ describe('participant normalization', () => {
     mockFetch(500, 'boom')
 
     await expect(getEventParticipants('5')).rejects.toMatchObject({ status: 500 })
+  })
+})
+
+describe('participant writes', () => {
+  const stored = { id: '51', eventId: '8', name: 'Tmp', status: 'confirmed' }
+
+  // The flat `/participants/:id` route answers 404 on DELETE in MockAPI.
+  it('deletes through the nested event route', async () => {
+    const fetchMock = mockFetch(200, stored)
+
+    await deleteParticipant('8', '51')
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.test/events/8/participants/51',
+      expect.objectContaining({ method: 'DELETE' }),
+    )
+  })
+
+  it('updates the status through the nested event route', async () => {
+    const fetchMock = mockFetch(200, stored)
+
+    await updateParticipantStatus('8', '51', 'confirmed')
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.test/events/8/participants/51',
+      expect.objectContaining({ method: 'PUT', body: JSON.stringify({ status: 'confirmed' }) }),
+    )
   })
 })

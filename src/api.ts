@@ -164,18 +164,27 @@ export function createParticipant(input: CreateParticipantInput): Promise<Partic
   })
 }
 
+/**
+ * Participants are a child resource of events in MockAPI: `DELETE /participants/:id`
+ * always answers 404, so writes on an existing participant use the nested route.
+ */
+function participantPath(eventId: string, participantId: string): string {
+  return `/events/${encodeURIComponent(eventId)}/participants/${encodeURIComponent(participantId)}`
+}
+
 export function updateParticipantStatus(
+  eventId: string,
   participantId: string,
   status: ParticipantStatus,
 ): Promise<Participant> {
-  return request(`/participants/${encodeURIComponent(participantId)}`, participantSchema, {
+  return request(participantPath(eventId, participantId), participantSchema, {
     method: 'PUT',
     body: JSON.stringify({ status }),
   })
 }
 
-export function deleteParticipant(participantId: string): Promise<Participant> {
-  return request(`/participants/${encodeURIComponent(participantId)}`, participantSchema, {
+export function deleteParticipant(eventId: string, participantId: string): Promise<Participant> {
+  return request(participantPath(eventId, participantId), participantSchema, {
     method: 'DELETE',
   })
 }
