@@ -178,7 +178,7 @@ function Occupancy({ capacity, participants, loading }: OccupancyProps) {
 
   const { coming, remaining, isFull } = getCapacitySummary(capacity, participants)
   return (
-    <div className="flex flex-col-reverse items-end gap-1 sm:flex-row sm:items-center sm:gap-2">
+    <div className="flex flex-col-reverse items-end gap-1 sm:flex-row sm:items-center sm:justify-end sm:gap-2">
       {isFull ? (
         <Badge variant="destructive">Complet</Badge>
       ) : (
