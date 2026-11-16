@@ -2,14 +2,6 @@ import { AlertTriangle, Search, UserRound } from 'lucide-react'
 import { useState } from 'react'
 import type { Participant } from '@/api'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import { isAttendedBeforeStart } from '@/rules'
 import { DeleteParticipantButton } from './DeleteParticipantButton'
 import { StatusSelect } from './StatusSelect'
@@ -24,6 +16,10 @@ type Props = {
   isSearching: boolean
 }
 
+/**
+ * A list rather than a table: each row wraps on narrow screens (name on top,
+ * status and delete below) instead of overflowing horizontally.
+ */
 export function ParticipantsTable({
   eventId,
   capacity,
@@ -32,68 +28,55 @@ export function ParticipantsTable({
   visibleParticipants,
   isSearching,
 }: Props) {
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Nom</TableHead>
-          <TableHead className="w-44">Statut</TableHead>
-          <TableHead className="w-12">
-            <span className="sr-only">Actions</span>
-          </TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {visibleParticipants.length === 0 ? (
-          <TableRow>
-            <TableCell colSpan={3} className="py-12 text-center text-muted-foreground">
-              {isSearching ? (
-                <>
-                  <Search className="mx-auto mb-2 size-6" />
-                  Aucun participant ne correspond à la recherche.
-                </>
-              ) : (
-                <>
-                  <UserRound className="mx-auto mb-2 size-6" />
-                  Aucun participant pour le moment.
-                </>
-              )}
-            </TableCell>
-          </TableRow>
+  if (visibleParticipants.length === 0) {
+    return (
+      <div className="py-12 text-center text-sm text-muted-foreground">
+        {isSearching ? (
+          <>
+            <Search className="mx-auto mb-2 size-6" />
+            Aucun participant ne correspond à la recherche.
+          </>
         ) : (
-          visibleParticipants.map((participant) => (
-            <TableRow key={participant.id}>
-              <TableCell>
-                <div className="flex items-center gap-3">
-                  <Avatar participant={participant} />
-                  <span className="font-medium">{participant.name}</span>
-                  {isAttendedBeforeStart(participant.status, startsAt) && (
-                    <span
-                      className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500"
-                      title="Marqué présent alors que l'événement n'a pas commencé"
-                    >
-                      <AlertTriangle className="size-3.5" />
-                      Avant le début
-                    </span>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <StatusSelect
-                  eventId={eventId}
-                  capacity={capacity}
-                  participants={participants}
-                  participant={participant}
-                />
-              </TableCell>
-              <TableCell>
-                <DeleteParticipantButton eventId={eventId} participant={participant} />
-              </TableCell>
-            </TableRow>
-          ))
+          <>
+            <UserRound className="mx-auto mb-2 size-6" />
+            Aucun participant pour le moment.
+          </>
         )}
-      </TableBody>
-    </Table>
+      </div>
+    )
+  }
+
+  return (
+    <ul className="divide-y" aria-label="Participants">
+      {visibleParticipants.map((participant) => (
+        <li key={participant.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2.5">
+          <div className="flex min-w-0 flex-1 basis-48 items-center gap-3">
+            <Avatar participant={participant} />
+            <div className="min-w-0">
+              <p className="font-medium break-words">{participant.name}</p>
+              {isAttendedBeforeStart(participant.status, startsAt) && (
+                <p
+                  className="inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-500"
+                  title="Marqué présent alors que l'événement n'a pas commencé"
+                >
+                  <AlertTriangle className="size-3.5" />
+                  Avant le début
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="ml-auto flex items-center gap-1">
+            <StatusSelect
+              eventId={eventId}
+              capacity={capacity}
+              participants={participants}
+              participant={participant}
+            />
+            <DeleteParticipantButton eventId={eventId} participant={participant} />
+          </div>
+        </li>
+      ))}
+    </ul>
   )
 }
 
