@@ -98,6 +98,16 @@ function normalizeText(value: string): string {
   return value.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
 }
 
+/** Not blocking (homonyms exist), only used to warn before creating a likely duplicate. */
+export function findParticipantByName(
+  participants: Participant[],
+  name: string,
+): Participant | undefined {
+  const normalizedName = normalizeText(name)
+  if (normalizedName === '') return undefined
+  return participants.find((participant) => normalizeText(participant.name) === normalizedName)
+}
+
 /** Case- and accent-insensitive search on the participant name. */
 export function searchParticipants(participants: Participant[], query: string): Participant[] {
   const normalizedQuery = normalizeText(query)

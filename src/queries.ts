@@ -8,6 +8,7 @@ import {
   getEvents,
   isNotFoundError,
   updateParticipantStatus,
+  type NormalizedStatus,
   type Participant,
   type ParticipantStatus,
 } from './api'
@@ -106,7 +107,7 @@ export async function updateStatusChecked(eventId: string, { participantId, stat
   const check = canChangeStatus(capacity, participants, participant, status)
   if (!check.allowed) throw new BusinessRuleError(check.reason)
 
-  return updateParticipantStatus(participantId, status)
+  return updateParticipantStatus(eventId, participantId, status)
 }
 
 export function useCreateParticipant(eventId: string) {
@@ -121,23 +122,37 @@ export function useCreateParticipant(eventId: string) {
 export function useUpdateParticipantStatus(eventId: string) {
   const queryClient = useQueryClient()
   const key = queryKeys.participants(eventId)
+  const mutationKey = ['updateParticipantStatus', eventId]
+
+  const setStatusInCache = (participantId: string, status: NormalizedStatus) =>
+    queryClient.setQueryData<Participant[]>(key, (current) =>
+      current?.map((p) => (p.id === participantId ? { ...p, status } : p)),
+    )
 
   return useMutation({
+    mutationKey,
     mutationFn: (change: StatusChange) => updateStatusChecked(eventId, change),
 
     // Optimistic update: the status changes instantly and is rolled back on error.
     onMutate: async ({ participantId, status }) => {
       await queryClient.cancelQueries({ queryKey: key })
-      const previous = queryClient.getQueryData<Participant[]>(key)
-      queryClient.setQueryData<Participant[]>(key, (current) =>
-        current?.map((p) => (p.id === participantId ? { ...p, status } : p)),
-      )
-      return { previous }
+      const previousStatus = queryClient
+        .getQueryData<Participant[]>(key)
+        ?.find((p) => p.id === participantId)?.status
+      setStatusInCache(participantId, status)
+      return { previousStatus }
     },
-    onError: (_error, _variables, context) => {
-      if (context?.previous) queryClient.setQueryData(key, context.previous)
+    // Only this participant is rolled back, so concurrent changes on other rows are kept.
+    onError: (_error, { participantId }, context) => {
+      if (context?.previousStatus) setStatusInCache(participantId, context.previousStatus)
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: key }),
+    // When several rows change at once, refetching after the first one settles
+    // would overwrite the optimistic state of the others: only the last one refetches.
+    onSettled: () => {
+      if (queryClient.isMutating({ mutationKey }) === 1) {
+        return queryClient.invalidateQueries({ queryKey: key })
+      }
+    },
   })
 }
 
@@ -147,7 +162,7 @@ export function useDeleteParticipant(eventId: string) {
   return useMutation({
     mutationFn: async (participantId: string) => {
       try {
-        await deleteParticipant(participantId)
+        await deleteParticipant(eventId, participantId)
       } catch (error) {
         // Already deleted elsewhere: the end result is the one the user wants.
         if (!isNotFoundError(error)) throw error

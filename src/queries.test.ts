@@ -65,7 +65,7 @@ describe('updateStatusChecked', () => {
 
     await updateStatusChecked('1', { participantId: '1', status: 'canceled' })
 
-    expect(api.updateParticipantStatus).toHaveBeenCalledWith('1', 'canceled')
+    expect(api.updateParticipantStatus).toHaveBeenCalledWith('1', '1', 'canceled')
   })
 
   it('refuses when the participant was deleted in the meantime', async () => {

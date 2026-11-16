@@ -3,6 +3,7 @@ import type { NormalizedStatus, Participant } from './api'
 import {
   canChangeStatus,
   canCreateParticipant,
+  findParticipantByName,
   getCapacitySummary,
   isAttendedBeforeStart,
   isComing,
@@ -156,5 +157,18 @@ describe('searchParticipants', () => {
 
   it('returns an empty list when nothing matches', () => {
     expect(searchParticipants(list, 'zzz')).toEqual([])
+  })
+})
+
+describe('findParticipantByName', () => {
+  const list = [participant('registered', 'Élodie Martin')]
+
+  it('matches regardless of case, accents and surrounding spaces', () => {
+    expect(findParticipantByName(list, '  elodie MARTIN ')?.name).toBe('Élodie Martin')
+  })
+
+  it('ignores partial matches and blank names', () => {
+    expect(findParticipantByName(list, 'Elodie')).toBeUndefined()
+    expect(findParticipantByName(list, '   ')).toBeUndefined()
   })
 })
