@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ApiError,
   createParticipant,
@@ -6,6 +6,7 @@ import {
   getEvent,
   getEventParticipants,
   getEvents,
+  getParticipants,
   isNotFoundError,
   updateParticipantStatus,
   type NormalizedStatus,
@@ -22,6 +23,20 @@ export const queryKeys = {
   events: ['events'] as const,
   event: (eventId: string) => ['event', eventId] as const,
   participants: (eventId: string) => ['participants', eventId] as const,
+  /** Every participant of every event, used for the occupancy shown on the events list. */
+  allParticipants: ['allParticipants'] as const,
+}
+
+/**
+ * After any participant write, both the event's list and the global list are
+ * outdated. The global one is only refetched if it is on screen; otherwise it
+ * is marked stale and refetched when the events list is opened again.
+ */
+function invalidateParticipants(queryClient: QueryClient, eventId: string) {
+  return Promise.all([
+    queryClient.invalidateQueries({ queryKey: queryKeys.participants(eventId) }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.allParticipants }),
+  ])
 }
 
 /* -------------------------------------------------------------------------- */
@@ -60,6 +75,10 @@ export function useEvent(eventId: string) {
     queryFn: () => getEvent(eventId),
     retry: shouldRetry,
   })
+}
+
+export function useAllParticipants() {
+  return useQuery({ queryKey: queryKeys.allParticipants, queryFn: getParticipants })
 }
 
 export function useEventParticipants(eventId: string) {
@@ -115,7 +134,7 @@ export function useCreateParticipant(eventId: string) {
 
   return useMutation({
     mutationFn: (input: NewParticipant) => createParticipantChecked(eventId, input),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.participants(eventId) }),
+    onSettled: () => invalidateParticipants(queryClient, eventId),
   })
 }
 
@@ -150,7 +169,7 @@ export function useUpdateParticipantStatus(eventId: string) {
     // would overwrite the optimistic state of the others: only the last one refetches.
     onSettled: () => {
       if (queryClient.isMutating({ mutationKey }) === 1) {
-        return queryClient.invalidateQueries({ queryKey: key })
+        return invalidateParticipants(queryClient, eventId)
       }
     },
   })
@@ -168,6 +187,6 @@ export function useDeleteParticipant(eventId: string) {
         if (!isNotFoundError(error)) throw error
       }
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.participants(eventId) }),
+    onSettled: () => invalidateParticipants(queryClient, eventId),
   })
 }

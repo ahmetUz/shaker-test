@@ -35,6 +35,17 @@ export function getCapacitySummary(capacity: number, participants: Participant[]
   }
 }
 
+/** Groups participants by event once, so the events list does not filter the whole list per row. */
+export function groupParticipantsByEvent(participants: Participant[]): Map<string, Participant[]> {
+  const byEvent = new Map<string, Participant[]>()
+  for (const participant of participants) {
+    const list = byEvent.get(participant.eventId)
+    if (list) list.push(participant)
+    else byEvent.set(participant.eventId, [participant])
+  }
+  return byEvent
+}
+
 export type RuleResult = { allowed: true } | { allowed: false; reason: string }
 
 /**

@@ -43,6 +43,7 @@ Each layer only depends on the one below it: components never call `fetch`, and 
 - **Capacity is enforced at two levels:**
   1. **UI**: the "Ajouter" button and the status options that would need a spot are disabled when the event is full.
   2. **Before each write**: the mutation re-reads the event and its participants from the server (bypassing the cache) and re-checks the rule. This catches changes made in another tab or by another user since the page was loaded.
+- **Events list occupancy** (`coming / capacity`, remaining spots, "Complet" badge) comes from a single `/participants` request grouped by event, not one request per event. Every participant write invalidates it, so the list is up to date when you come back to it. If that request fails, the list still shows the capacity.
 - **Delete** asks for confirmation and suggests the `Annulé` status to keep a record.
 
 ## Edge cases handled
@@ -69,8 +70,7 @@ Each layer only depends on the one below it: components never call `fetch`, and 
 ## What I would improve with more time
 
 - **Enforce capacity on the server.** The client-side re-check narrows the race window but cannot close it: two users can still pass the check at the same time. This needs a backend transaction or a conditional write; MockAPI cannot do it.
-- **Show the number of participants on the events list** (one `/participants` request grouped by event) with a "complet" badge.
-- **Status filter and sorting** on the participants list, plus pagination/virtualization for large events (the API supports `page`/`limit`).
+- **Status filter and sorting** on the participants list, plus pagination/virtualization for large events (the API supports `page`/`limit`). Loading every participant for the events list only works while the dataset is small; a real API should return a participant count per event.
 - **Component and end-to-end tests** (React Testing Library + MSW, Playwright) for the full flows; currently the API layer, business rules and mutation re-checks are unit-tested.
 - **Edit participant details** (name) and **undo** for delete/cancel via the toast.
 - A waiting list when the event is full instead of a hard block.

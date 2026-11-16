@@ -5,6 +5,7 @@ import {
   canCreateParticipant,
   findParticipantByName,
   getCapacitySummary,
+  groupParticipantsByEvent,
   isAttendedBeforeStart,
   isComing,
   searchParticipants,
@@ -64,6 +65,20 @@ describe('getCapacitySummary', () => {
 
   it('treats a capacity of 0 as full', () => {
     expect(getCapacitySummary(0, [])).toMatchObject({ remaining: 0, isFull: true })
+  })
+})
+
+describe('groupParticipantsByEvent', () => {
+  it('groups participants by their event id', () => {
+    const a = { ...participant('registered'), eventId: '1' }
+    const b = { ...participant('canceled'), eventId: '2' }
+    const c = { ...participant('confirmed'), eventId: '1' }
+
+    const byEvent = groupParticipantsByEvent([a, b, c])
+
+    expect(byEvent.get('1')).toEqual([a, c])
+    expect(byEvent.get('2')).toEqual([b])
+    expect(byEvent.get('3')).toBeUndefined()
   })
 })
 

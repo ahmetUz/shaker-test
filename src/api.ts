@@ -157,6 +157,11 @@ export async function getEventParticipants(eventId: string): Promise<Participant
   }
 }
 
+/** All participants of all events in one request (the list is small enough for MockAPI). */
+export function getParticipants(): Promise<Participant[]> {
+  return request('/participants', z.array(participantSchema))
+}
+
 export function createParticipant(input: CreateParticipantInput): Promise<Participant> {
   return request('/participants', participantSchema, {
     method: 'POST',
